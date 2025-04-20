@@ -1,1 +1,1 @@
-add to file /Users/mehmetsayin/projects/nodejs-training/test/new-file.ts content: console.log("Hello from added content!");
+rename a file /Users/mehmetsayin/projects/nodejs-training/test/a-new-file.ts to /Users/mehmetsayin/projects/nodejs-training/test/file.ts

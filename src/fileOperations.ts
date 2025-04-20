@@ -1,4 +1,4 @@
-import { writeFile, unlink, copyFile, appendFile } from "fs/promises";
+import { writeFile, unlink, copyFile, appendFile, rename } from "fs/promises";
 
 export const createFile = async (filePath: string): Promise<void> => {
   console.log(`Attempting to create file: ${filePath}`);
@@ -37,14 +37,13 @@ export const renameFile = async (
 ): Promise<void> => {
   console.log(`Attempting to rename file: ${filePath}`);
   try {
-    await copyFile(filePath, destFilePath);
+    await rename(filePath, destFilePath);
     console.log(`File copied successfully: ${filePath}`);
   } catch (copyError) {
     if (copyError.code === "ENOENT") {
-      // It's often okay if the file doesn't exist when trying to delete
-      console.log(`File not found, skipping delete: ${filePath}`);
+      console.log(`File not found, skipping rename: ${filePath}`);
     } else {
-      console.error(`Error deleting file ${filePath}:`, copyError);
+      console.error(`Error rename file ${filePath}:`, copyError);
     }
   }
 };

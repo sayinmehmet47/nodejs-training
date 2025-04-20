@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 // Derive the directory name from the current module's URL
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+console.log(__dirname);
 
 // Construct the path relative to the current file's directory
 const COMMAND_FILE_PATH = path.resolve(__dirname, "../command.txt");
