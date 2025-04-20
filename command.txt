@@ -1,0 +1,1 @@
+create a file /Users/mehmetsayin/projects/nodejs-training/test/a-new-file.ts
