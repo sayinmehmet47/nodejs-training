@@ -54,6 +54,11 @@ server.on('connection', (socket) => {
 
   socket.on('error', (err) => {
     console.error(`${clientId} error:`, err);
+    for (const [client, _] of clients) {
+      if (client !== socket) {
+        client.write(`${err}\n`);
+      }
+    }
     clients.delete(socket);
   });
 });
