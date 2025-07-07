@@ -2,5 +2,9 @@
   "devDependencies": {
     "@types/node": "^22.14.1"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "cli-progress": "^3.12.0"
+  }
 }
