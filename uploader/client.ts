@@ -32,27 +32,41 @@ const client = net.createConnection({ port: 5050, host: "::1" }, () => {
 let progressBar: cliProgress.SingleBar | null = null;
 let fileStream: fs.ReadStream | null = null;
 let serverReady = false;
+let buffer = Buffer.alloc(0);
 
 client.on("data", (chunk) => {
-  const message = chunk.toString().trim();
-  if (message === "READY") {
-    serverReady = true;
-    startFileTransfer();
-  } else if (message.startsWith("PROGRESS:")) {
-    const progress = parseInt(message.substring("PROGRESS:".length), 10);
-    // Server sends progress updates, we could use these for validation
-  } else if (message === "COMPLETE") {
-    if (progressBar) {
-      progressBar.stop();
+  buffer = Buffer.concat([buffer, chunk]);
+
+  let newlineIndex;
+  while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+    const message = buffer.subarray(0, newlineIndex).toString().trim();
+    buffer = buffer.subarray(newlineIndex + 1);
+
+    if (message === "READY") {
+      serverReady = true;
+      startFileTransfer();
+    } else if (message.startsWith("PROGRESS:")) {
+      const progress = parseInt(message.substring("PROGRESS:".length), 10);
+      if (progressBar) {
+        const bytesTransferred = Math.floor(
+          (progress / 100) * progressBar.getTotal()
+        );
+        progressBar.update(bytesTransferred);
+      }
+    } else if (message === "COMPLETE") {
+      if (progressBar) {
+        progressBar.update(progressBar.getTotal());
+        progressBar.stop();
+      }
+      console.log("\n✅ File upload complete!");
+      client.end();
+    } else if (message.startsWith("ERROR:")) {
+      if (progressBar) {
+        progressBar.stop();
+      }
+      console.error("\n❌ Server error:", message.substring("ERROR:".length));
+      client.destroy();
     }
-    console.log("✅ File upload complete!");
-    client.end();
-  } else if (message.startsWith("ERROR:")) {
-    console.error(`❌ Server error: ${message.substring("ERROR:".length)}`);
-    if (progressBar) {
-      progressBar.stop();
-    }
-    client.destroy();
   }
 });
 
@@ -66,6 +80,8 @@ function startFileTransfer() {
     barCompleteChar: "█",
     barIncompleteChar: "░",
     hideCursor: true,
+    clearOnComplete: true,
+    stopOnComplete: true,
   });
 
   progressBar.start(fileSize, 0);
@@ -75,7 +91,6 @@ function startFileTransfer() {
 
   fileStream.on("data", (chunk) => {
     totalBytesRead += chunk.length;
-    progressBar?.update(totalBytesRead);
 
     // Write binary data directly to socket
     const writeSuccess = client.write(chunk);
@@ -90,14 +105,14 @@ function startFileTransfer() {
   });
 
   fileStream.on("end", () => {
-    console.log("📤 File data sent, waiting for server confirmation...");
+    console.log("\n📤 File data sent, waiting for server confirmation...");
   });
 
   fileStream.on("error", (err) => {
     if (progressBar) {
       progressBar.stop();
     }
-    console.error("❌ File read error:", err);
+    console.error("\n❌ File read error:", err);
     client.destroy();
   });
 }
@@ -117,7 +132,6 @@ client.on("error", (err) => {
 });
 
 process.on("SIGINT", () => {
-  console.log("\n🛑 Cancelling upload...");
   if (progressBar) {
     progressBar.stop();
   }

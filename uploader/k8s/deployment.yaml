@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uploader-deployment
+  labels:
+    app: uploader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uploader
+  template:
+    metadata:
+      labels:
+        app: uploader
+    spec:
+      containers:
+        - name: uploader
+          image: sayinmehmet47/uploader:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5050
