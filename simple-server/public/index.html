@@ -10,8 +10,25 @@
 <body>
     <h1>Welcome to My Page</h1>
     <p>This is served from Node.js!</p>
-</body>
 
-<script src="/script.js"></script>
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+    <div id="loginMessage"></div>
+
+    <h2>Upload File</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="uploadMessage"></div>
+
+    <script src="/script.js"></script>
+</body>
 
 </html>
