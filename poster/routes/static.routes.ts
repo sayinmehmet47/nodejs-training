@@ -1,5 +1,5 @@
-import { Router } from "../../../framework/Application.js";
-import { serveStaticFile } from "../controllers/static.controller.js";
+import { Router } from "../../framework/Application.ts";
+import { serveStaticFile } from "../controllers/static.controller.ts";
 
 const staticRouter = new Router();
 
@@ -15,8 +15,8 @@ staticRouter.get("/styles.css", (req, res) => {
   serveStaticFile(res, "styles.css", "text/css");
 });
 
-staticRouter.get("/script.js", (req, res) => {
-  serveStaticFile(res, "script.js", "application/javascript");
+staticRouter.get("/scripts.js", (req, res) => {
+  serveStaticFile(res, "scripts.js", "application/javascript");
 });
 
 export default staticRouter;

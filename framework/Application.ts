@@ -1,5 +1,5 @@
-import http, { IncomingMessage, ServerResponse } from 'http';
-import { EventEmitter } from 'events';
+import http, { IncomingMessage, ServerResponse } from "http";
+import { EventEmitter } from "events";
 
 export type RouteHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
@@ -17,24 +17,29 @@ export class Router {
   }
 
   public get(path: string, handler: RouteHandler) {
-    this.addRoute('GET', path, handler);
+    this.addRoute("GET", path, handler);
     return this;
   }
 
   public post(path: string, handler: RouteHandler) {
-    this.addRoute('POST', path, handler);
+    this.addRoute("POST", path, handler);
+    return this;
+  }
+
+  public delete(path: string, handler: RouteHandler) {
+    this.addRoute("DELETE", path, handler);
     return this;
   }
 }
 
 type HttpMethod =
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'DELETE'
-  | 'PATCH'
-  | 'OPTIONS'
-  | 'HEAD';
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "DELETE"
+  | "PATCH"
+  | "OPTIONS"
+  | "HEAD";
 
 export class Application extends EventEmitter {
   private server: http.Server;
@@ -50,8 +55,8 @@ export class Application extends EventEmitter {
     const { method, url } = req;
 
     if (!method || !url) {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      return res.end('Bad Request');
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      return res.end("Bad Request");
     }
 
     const route = this.router.routes.find(
@@ -62,8 +67,8 @@ export class Application extends EventEmitter {
       return route.handler(req, res);
     }
 
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('404: Not Found');
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("404: Not Found");
   }
 
   public use(router: Router) {

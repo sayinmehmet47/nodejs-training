@@ -1,6 +1,6 @@
-import { Application } from './framework/Application.js';
-import staticRouter from './routes/static.routes.js';
-import apiRouter from './routes/api.routes.js';
+import { Application } from "../../framework/Application.js";
+import staticRouter from "./routes/static.routes.js";
+import apiRouter from "./routes/api.routes.js";
 
 const PORT = 3000;
 const app = new Application();

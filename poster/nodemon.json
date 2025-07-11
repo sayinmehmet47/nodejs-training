@@ -1,0 +1,20 @@
+{
+  "watch": [
+    "server.ts",
+    "routes/",
+    "controllers/",
+    "utils/",
+    "framework/"
+  ],
+  "ext": "ts,js,json",
+  "ignore": [
+    "node_modules/",
+    "public/",
+    "*.test.ts",
+    "*.spec.ts"
+  ],
+  "exec": "ts-node --esm server.ts",
+  "env": {
+    "NODE_ENV": "development"
+  }
+} 
