@@ -1,27 +1,34 @@
 import { Router } from "../../framework/Application.ts";
-import { getUserFromSession } from "../utils/redis-session.ts";
+import {
+  requireAuth,
+  optionalAuth,
+  type AuthenticatedRequest,
+} from "../middleware/auth.middleware.ts";
 
 const apiRouter = new Router();
 
-apiRouter.get("/api/user", async (req, res) => {
-  const user = await getUserFromSession(req.headers.cookie);
+apiRouter.get(
+  "/api/user",
+  async (req: AuthenticatedRequest, res) => {
+    // User is already attached by middleware if authenticated
+    if (!req.user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Not authenticated" }));
+    }
 
-  if (!user) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Not authenticated" }));
-  }
-
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(
-    JSON.stringify({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      status: "active",
-    })
-  );
-});
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        username: req.user.username,
+        status: "active",
+      })
+    );
+  },
+  [requireAuth]
+);
 
 let posts = [
   {
@@ -68,36 +75,40 @@ apiRouter.get("/api/posts", (req, res) => {
   res.end(JSON.stringify(posts));
 });
 
-apiRouter.post("/api/posts", async (req, res) => {
-  try {
-    const body = await getRequestBody(req);
-    const { title, content, body: bodyContent } = body;
+apiRouter.post(
+  "/api/posts",
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const body = await getRequestBody(req);
+      const { title, content, body: bodyContent } = body;
 
-    const postContent = content || bodyContent;
+      const postContent = content || bodyContent;
 
-    if (!title || !postContent) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      return res.end(
-        JSON.stringify({ error: "Title and content/body are required" })
-      );
+      if (!title || !postContent) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(
+          JSON.stringify({ error: "Title and content/body are required" })
+        );
+      }
+
+      const newPost = {
+        id: posts.length + 1,
+        title,
+        body: postContent,
+        author: req.user?.name || "Anonymous", // Use authenticated user's name
+        createdAt: new Date().toISOString(),
+      };
+
+      posts.push(newPost);
+
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(newPost));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Internal server error" }));
     }
-
-    const newPost = {
-      id: posts.length + 1,
-      title,
-      body: postContent,
-      author: "John Doe",
-      createdAt: new Date().toISOString(),
-    };
-
-    posts.push(newPost);
-
-    res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(newPost));
-  } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Internal server error" }));
-  }
-});
+  },
+  [requireAuth]
+);
 
 export default apiRouter;
