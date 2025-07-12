@@ -1,10 +1,10 @@
 import { Router } from "../../framework/Application.ts";
 import { IncomingMessage, ServerResponse } from "http";
-import { sessions, users } from "../utils/session.ts";
+import { users } from "../utils/session.ts";
+import { setSession, deleteSession } from "../utils/redis-session.ts";
 
 const authRouter = new Router();
 
-// Helper function to get request body
 const getRequestBody = async (req: IncomingMessage): Promise<any> => {
   return new Promise((resolve) => {
     let body = "";
@@ -21,7 +21,6 @@ const getRequestBody = async (req: IncomingMessage): Promise<any> => {
   });
 };
 
-// Login endpoint
 authRouter.post("/api/login", async (req, res) => {
   try {
     const body = await getRequestBody(req);
@@ -43,9 +42,8 @@ authRouter.post("/api/login", async (req, res) => {
       return res.end(JSON.stringify({ error: "Invalid credentials" }));
     }
 
-    // Generate session token (in real app, use JWT)
     const sessionToken = Math.random().toString(36).substring(2);
-    sessions.set(sessionToken, user.id);
+    await setSession(sessionToken, user.id, 3600); // 1 hour TTL
 
     res.writeHead(200, {
       "Content-Type": "application/json",
@@ -69,12 +67,12 @@ authRouter.post("/api/login", async (req, res) => {
 });
 
 // Logout endpoint
-authRouter.delete("/api/logout", (req, res) => {
+authRouter.delete("/api/logout", async (req, res) => {
   const cookies = req.headers.cookie;
   if (cookies) {
     const sessionMatch = cookies.match(/session=([^;]+)/);
     if (sessionMatch) {
-      sessions.delete(sessionMatch[1]);
+      await deleteSession(sessionMatch[1]);
     }
   }
 

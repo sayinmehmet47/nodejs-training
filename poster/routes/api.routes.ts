@@ -1,10 +1,10 @@
 import { Router } from "../../framework/Application.ts";
-import { sessions, users, getUserFromSession } from "../utils/session.ts";
+import { getUserFromSession } from "../utils/redis-session.ts";
 
 const apiRouter = new Router();
 
-apiRouter.get("/api/user", (req, res) => {
-  const user = getUserFromSession(req.headers.cookie);
+apiRouter.get("/api/user", async (req, res) => {
+  const user = await getUserFromSession(req.headers.cookie);
 
   if (!user) {
     res.writeHead(401, { "Content-Type": "application/json" });
@@ -23,7 +23,6 @@ apiRouter.get("/api/user", (req, res) => {
   );
 });
 
-// Mock posts database
 let posts = [
   {
     id: 1,
@@ -48,7 +47,6 @@ let posts = [
   },
 ];
 
-// Helper function to get request body
 const getRequestBody = async (req: any): Promise<any> => {
   return new Promise((resolve) => {
     let body = "";
@@ -75,7 +73,6 @@ apiRouter.post("/api/posts", async (req, res) => {
     const body = await getRequestBody(req);
     const { title, content, body: bodyContent } = body;
 
-    // Accept both 'content' and 'body' fields
     const postContent = content || bodyContent;
 
     if (!title || !postContent) {
@@ -89,7 +86,7 @@ apiRouter.post("/api/posts", async (req, res) => {
       id: posts.length + 1,
       title,
       body: postContent,
-      author: "John Doe", // In real app, get from session
+      author: "John Doe",
       createdAt: new Date().toISOString(),
     };
 

@@ -2,30 +2,49 @@ import { Application } from "../framework/Application.ts";
 import staticRouter from "./routes/static.routes.ts";
 import apiRouter from "./routes/api.routes.ts";
 import authRouter from "./routes/auth.routes.ts";
+import { initializeRedis, closeRedis } from "./utils/redis-session.ts";
 
-// Get port from environment or command line argument
 const PORT = parseInt(process.env.PORT || process.argv[2] || "3001", 10);
 
-const app = new Application();
+const startServer = async () => {
+  try {
+    // Initialize Redis connection
+    await initializeRedis();
 
-// Mount the routers
-app.use(staticRouter);
-app.use(apiRouter);
-app.use(authRouter);
+    const app = new Application();
 
-app.listen(PORT, () => {
-  console.log(`🚀 Poster App Instance running on http://localhost:${PORT}`);
-  console.log(`📊 Process ID: ${process.pid}`);
-  console.log(`⏰ Started at: ${new Date().toISOString()}`);
-});
+    // Mount the routers
+    app.use(staticRouter);
+    app.use(apiRouter);
+    app.use(authRouter);
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log(`\n🛑 Shutting down instance on port ${PORT}...`);
-  process.exit(0);
-});
+    app.listen(PORT, () => {
+      console.log(
+        `🚀 Poster App Instance running on http://localhost:${PORT} (PID: ${process.pid})`
+      );
+      console.log(`⏰ Started at: ${new Date().toISOString()}`);
+    });
 
-process.on("SIGTERM", () => {
-  console.log(`\n🛑 Terminating instance on port ${PORT}...`);
-  process.exit(0);
-});
+    // Graceful shutdown
+    process.on("SIGINT", async () => {
+      console.log(
+        `\n🛑 Shutting down instance on port ${PORT} (PID: ${process.pid})...`
+      );
+      await closeRedis();
+      process.exit(0);
+    });
+
+    process.on("SIGTERM", async () => {
+      console.log(
+        `\n🛑 Terminating instance on port ${PORT} (PID: ${process.pid})...`
+      );
+      await closeRedis();
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
