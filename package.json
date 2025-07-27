@@ -1,6 +1,10 @@
 {
+  "scripts": {
+    "test": "vitest"
+  },
   "devDependencies": {
-    "@types/node": "^22.14.1"
+    "@types/node": "^22.14.1",
+    "vitest": "^3.2.4"
   },
   "type": "module",
   "dependencies": {
