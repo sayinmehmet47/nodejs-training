@@ -1,0 +1,4 @@
+Hello World!
+This is a sample text file.
+It contains multiple lines.
+We can use this to test our filter program. 
