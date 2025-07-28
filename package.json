@@ -3,7 +3,13 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^22.14.1",
+    "express": "^5.1.0",
+    "inversify": "^7.6.1",
+    "reflect-metadata": "^0.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },
   "type": "module",

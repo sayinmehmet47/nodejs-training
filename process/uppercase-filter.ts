@@ -1,4 +1,3 @@
-import { text } from "node:stream/consumers";
 import { uppercaseFilter } from "./filter-examples";
 
 async function main() {

@@ -1,3 +1,4 @@
 node_modules
 stream/text.txt
 stream/dest.txt
+inversify/node_modules
