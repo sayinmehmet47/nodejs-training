@@ -4,6 +4,7 @@ import { Ninja } from "./services/NinjaService";
 import { Samurai } from "./services/SamuraiService";
 import { LoggerMiddleware } from "./middleware/LoggerMiddleware";
 import { UserService } from "./services/UserService";
+import { User } from "./models/user";
 
 const container = new Container({ autoBindInjectable: true });
 

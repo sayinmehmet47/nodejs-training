@@ -1,7 +1,5 @@
 import { injectable } from "inversify";
-import { IWarrior, TYPES } from "../types";
-import { container } from "../inversify.config";
-import { UserService } from "./UserService";
+import { IWarrior } from "../types";
 
 @injectable()
 export class Ninja implements IWarrior {

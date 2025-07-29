@@ -1,5 +1,4 @@
-import { provide } from "inversify-binding-decorators";
-import { TYPES } from "../types";
+import { injectable } from "inversify";
 
 interface IUser {
   email: string;
@@ -7,7 +6,7 @@ interface IUser {
   _id?: string;
 }
 
-@provide(TYPES.User)
+@injectable()
 export class User implements IUser {
   constructor(public email: string, public name: string, public _id?: string) {}
 }

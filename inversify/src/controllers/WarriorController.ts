@@ -1,8 +1,8 @@
 import { inject } from "inversify";
 import { IWarrior, FACTORIES } from "../types";
-import express from "express";
-import { controller, httpGet, httpPost } from "inversify-express-utils";
+import { controller, httpGet, httpPost, requestBody, requestParam } from "inversify-express-utils";
 import { interfaces } from "inversify";
+import createHttpError from "http-errors";
 
 @controller("/api/warrior")
 export class WarriorController {
@@ -11,42 +11,38 @@ export class WarriorController {
     private warriorFactory: interfaces.Factory<IWarrior>
   ) {}
 
-  @httpGet("/:warriorType/fight")
-  getWarriorFight(req: express.Request, res: express.Response) {
+  private getWarrior(warriorType: string): IWarrior {
     try {
-      const warrior = this.warriorFactory(req.params.warriorType) as IWarrior;
-      res.send(warrior.fight());
+      return this.warriorFactory(warriorType) as IWarrior;
     } catch (error) {
-      res.status(400).send("Invalid warrior type specified.");
+      throw createHttpError(400, "Invalid warrior type specified.");
     }
+  }
+
+  @httpGet("/:warriorType/fight")
+  getWarriorFight(@requestParam("warriorType") warriorType: string) {
+    const warrior = this.getWarrior(warriorType);
+    return warrior.fight();
   }
 
   @httpPost("/:warriorType/train")
-  trainWarrior(req: express.Request, res: express.Response) {
-    try {
-      const warrior = this.warriorFactory(req.params.warriorType) as IWarrior;
-      const { level } = req.body;
-
-      if (typeof level !== "number") {
-        return res.status(400).send("Level must be a number");
-      }
-
-      const result = warrior.train(level);
-      res.send(result);
-    } catch (error) {
-      res.status(400).send("Invalid warrior type specified.");
+  trainWarrior(
+    @requestParam("warriorType") warriorType: string,
+    @requestBody() { level }: { level: number }
+  ) {
+    if (typeof level !== "number") {
+      throw createHttpError(400, "Level must be a number");
     }
+    const warrior = this.getWarrior(warriorType);
+    return warrior.train(level);
   }
 
   @httpGet("/:warriorType/skill-level")
-  getSkillLevel(req: express.Request, res: express.Response) {
-    try {
-      const warrior = this.warriorFactory(req.params.warriorType) as IWarrior;
-      res.status(200).send({
-        skillLevel: warrior.getSkillLevel(),
-      });
-    } catch (error) {
-      res.status(400).send("Invalid warrior type specified.");
-    }
+  getSkillLevel(@requestParam("warriorType") warriorType: string) {
+    const warrior = this.getWarrior(warriorType);
+    return {
+      skillLevel: warrior.getSkillLevel(),
+    };
   }
 }
+

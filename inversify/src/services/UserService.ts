@@ -1,14 +1,10 @@
 import { injectable } from "inversify";
 import { User } from "../models/user";
-
-export interface IUser {
-  email: string;
-  name: string;
-}
+import createHttpError from "http-errors";
 
 @injectable()
 export class UserService {
-  private userStorage: IUser[] = [
+  private userStorage: User[] = [
     {
       email: "lorem@ipsum.com",
       name: "Lorem",
@@ -24,7 +20,11 @@ export class UserService {
   }
 
   public getUser(id: string): User {
-    return this.userStorage.find((user) => user.name === id) as User;
+    const user = this.userStorage.find((user) => user.name === id);
+    if (!user) {
+      throw createHttpError(404, "User not found");
+    }
+    return user;
   }
 
   public newUser(user: User): User {
@@ -33,17 +33,21 @@ export class UserService {
   }
 
   public updateUser(id: string, user: User): User {
-    this.userStorage.forEach((entry, index) => {
-      if (entry.name === id) {
-        this.userStorage[index] = user;
-      }
-    });
-
+    const index = this.userStorage.findIndex((entry) => entry.name === id);
+    if (index === -1) {
+      throw createHttpError(404, "User not found");
+    }
+    this.userStorage[index] = user;
     return user;
   }
 
   public deleteUser(id: string): string {
+    const initialLength = this.userStorage.length;
     this.userStorage = this.userStorage.filter((user) => user.name !== id);
+    if (this.userStorage.length === initialLength) {
+      throw createHttpError(404, "User not found");
+    }
     return id;
   }
 }
+
