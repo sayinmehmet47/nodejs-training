@@ -5,7 +5,7 @@ import { Samurai } from "./services/SamuraiService";
 import { LoggerMiddleware } from "./middleware/LoggerMiddleware";
 import { UserService } from "./services/UserService";
 
-const container = new Container();
+const container = new Container({ autoBindInjectable: true });
 
 container.bind<IWarrior>(TYPES.Warrior).to(Ninja).whenTargetNamed("ninja");
 container.bind<IWarrior>(TYPES.Warrior).to(Samurai).whenTargetNamed("samurai");

@@ -11,6 +11,7 @@
 	"dependencies": {
 		"express": "^4.21.0",
 		"inversify": "^6.0.2",
+		"inversify-binding-decorators": "^4.0.0",
 		"inversify-express-utils": "^6.5.0",
 		"reflect-metadata": "^0.2.2"
 	},

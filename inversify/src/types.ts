@@ -9,6 +9,7 @@ export interface IWarrior {
 export const TYPES = {
   Warrior: Symbol.for("IWarrior"),
   UserService: Symbol.for("UserService"),
+  User: Symbol.for("User"),
 } as const;
 
 export const FACTORIES = {

@@ -2,8 +2,7 @@ import "reflect-metadata";
 import express from "express";
 import { InversifyExpressServer } from "inversify-express-utils";
 import { container } from "./src/inversify.config";
-import "./src/controllers/WarriorController";
-import "./src/controllers/UserController";
+import "./src/ioc/loader";
 
 const server = new InversifyExpressServer(container);
 

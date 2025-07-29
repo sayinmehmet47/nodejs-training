@@ -1,4 +1,5 @@
 import { injectable } from "inversify";
+import { User } from "../models/user";
 
 export interface IUser {
   email: string;
@@ -18,20 +19,20 @@ export class UserService {
     },
   ];
 
-  public getUsers(): IUser[] {
+  public getUsers(): User[] {
     return this.userStorage;
   }
 
-  public getUser(id: string): IUser {
-    return this.userStorage.find((user) => user.name === id) as IUser;
+  public getUser(id: string): User {
+    return this.userStorage.find((user) => user.name === id) as User;
   }
 
-  public newUser(user: IUser): IUser {
+  public newUser(user: User): User {
     this.userStorage.push(user);
     return user;
   }
 
-  public updateUser(id: string, user: IUser): IUser {
+  public updateUser(id: string, user: User): User {
     this.userStorage.forEach((entry, index) => {
       if (entry.name === id) {
         this.userStorage[index] = user;
