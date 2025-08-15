@@ -1,4 +1,4 @@
-import { performance } from "perf_hooks";
+import { performance } from 'perf_hooks';
 
 const ITERATIONS = 1_000_000;
 const SIZE = 564; // 64 bytes, small enough to use the internal pool
