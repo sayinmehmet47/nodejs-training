@@ -1,0 +1,15 @@
+[
+    {
+        "id": 1,
+        "name": "examle-video.mp4",
+        "extension": "mp4",
+        "dimensions": {
+            "width": 1920,
+            "height": 1080
+        },
+        "videoId": "c7fab4a0",
+        "userId": 1,
+        "extractedAudio": false,
+        "resizes": {}
+    }
+]
