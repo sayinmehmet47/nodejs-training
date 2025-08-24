@@ -30,4 +30,7 @@ export default (server: Express) => {
 
   // Upload a video
   server.post('/api/upload-video', authenticate, Video.uploadVideo);
+
+  // Get a video asset
+  server.get('/get-video-asset', authenticate, Video.getVideoAsset);
 };

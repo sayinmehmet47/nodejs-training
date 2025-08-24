@@ -1,15 +1,1 @@
-[
-    {
-        "id": 1,
-        "name": "examle-video.mp4",
-        "extension": "mp4",
-        "dimensions": {
-            "width": 1920,
-            "height": 1080
-        },
-        "videoId": "c7fab4a0",
-        "userId": 1,
-        "extractedAudio": false,
-        "resizes": {}
-    }
-]
+[{"id":1,"name":"examle-video.mp4","extension":"mp4","dimensions":{"width":1920,"height":1080},"videoId":"99cf7425","userId":1,"extractedAudio":false,"resizes":{}},{"id":2,"name":"examle-video.mp4","extension":"mp4","dimensions":{"width":1920,"height":1080},"videoId":"375c0525","userId":1,"extractedAudio":false,"resizes":{}}]

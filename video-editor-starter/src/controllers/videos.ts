@@ -7,14 +7,13 @@ import { deleteFileOrDir } from '../../lib/utils';
 import { mkdir } from 'node:fs/promises';
 import db from '../DB';
 import { RequestWithUserId } from '../middleware';
+import { makeThumbnail } from '../../lib/ff';
 
 export const getVideos = (req: Request, res: Response, next: NextFunction) => {
-  const name = req.query.name as string;
-  if (name) {
-    res.json({ message: `Your name is ${name}` });
-  } else {
-    return next({ status: 400, message: 'Name is required' });
-  }
+  const videos = db.videos.filter(
+    (video) => video.userId === (req as RequestWithUserId).userId
+  );
+  res.json(videos);
 };
 
 export const uploadVideo = async (
@@ -31,6 +30,7 @@ export const uploadVideo = async (
   const videoId = randomBytes(4).toString('hex');
   const videoDir = path.join('./storage', videoId);
   const videoPath = path.join(videoDir, `original.${extension}`);
+  const thumbnailPath = path.join(videoDir, `thumbnail.jpg`);
 
   try {
     // Ensure directory exists
@@ -39,6 +39,9 @@ export const uploadVideo = async (
     // Save file with pipeline
     const writableStream = fs.createWriteStream(videoPath);
     await pipeline(req, writableStream);
+
+    // make thumbnail
+    await makeThumbnail(videoPath, thumbnailPath);
 
     // Add video to database
     const newVideo = {
@@ -71,5 +74,84 @@ export const uploadVideo = async (
     // log the error
     console.error(error);
     res.status(500).json({ message: 'Failed to upload video' });
+  }
+};
+
+// Content type mapping for file extensions
+const CONTENT_TYPES = {
+  mp4: 'video/mp4',
+  avi: 'video/x-msvideo',
+  mov: 'video/quicktime',
+  mkv: 'video/x-matroska',
+  webm: 'video/webm',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+} as const;
+
+export const getVideoAsset = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { videoId, type } = req.query as { videoId: string; type: string };
+  const video = db.videos.find((v) => v.videoId === videoId);
+
+  if (!video) {
+    return next({ status: 404, message: 'Video not found' });
+  }
+
+  // Determine file details based on type
+  const fileDetails = getFileDetails(type, video);
+
+  // Set headers for proper download
+  res.setHeader('Content-Type', fileDetails.contentType);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${fileDetails.downloadName}"`
+  );
+
+  // Serve the file
+  res.sendFile(
+    path.join(
+      __dirname,
+      '..',
+      '..',
+      'storage',
+      video.videoId,
+      fileDetails.filename
+    )
+  );
+};
+
+const getFileDetails = (type: string, video: any) => {
+  switch (type) {
+    case 'thumbnail':
+      return {
+        filename: 'thumbnail.jpg',
+        contentType: 'image/jpeg',
+        downloadName: `${video.name.replace(/\.[^/.]+$/, '')}_thumbnail.jpg`,
+      };
+
+    case 'original':
+      return {
+        filename: `original.${video.extension}`,
+        contentType:
+          CONTENT_TYPES[
+            video.extension.toLowerCase() as keyof typeof CONTENT_TYPES
+          ] || 'application/octet-stream',
+        downloadName: video.name,
+      };
+
+    default:
+      return {
+        filename: type,
+        contentType: 'application/octet-stream',
+        downloadName: type,
+      };
   }
 };
