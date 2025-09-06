@@ -26,7 +26,9 @@ interface Video {
   resizes: Record<
     string,
     {
-      processing: boolean;
+      width: number;
+      height: number;
+      filename: string;
     }
   >;
 }

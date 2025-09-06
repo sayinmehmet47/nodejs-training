@@ -7,7 +7,11 @@ import { deleteFileOrDir } from '../../lib/utils';
 import { mkdir } from 'node:fs/promises';
 import db from '../DB';
 import { RequestWithUserId } from '../middleware';
-import { makeThumbnail } from '../../lib/ff';
+import {
+  makeThumbnail,
+  extractAudioFromVideo,
+  resizeVideoFile,
+} from '../../lib/ff';
 
 export const getVideos = (req: Request, res: Response, next: NextFunction) => {
   const videos = db.videos.filter(
@@ -98,15 +102,25 @@ export const getVideoAsset = (
   res: Response,
   next: NextFunction
 ) => {
-  const { videoId, type } = req.query as { videoId: string; type: string };
+  const { videoId, type, dimensions } = req.query as {
+    videoId: string;
+    type: string;
+    dimensions?: string;
+  };
   const video = db.videos.find((v) => v.videoId === videoId);
 
   if (!video) {
     return next({ status: 404, message: 'Video not found' });
   }
 
+  // Handle resize requests from frontend
+  let fileType = type;
+  if (type === 'resize' && dimensions) {
+    fileType = dimensions;
+  }
+
   // Determine file details based on type
-  const fileDetails = getFileDetails(type, video);
+  const fileDetails = getFileDetails(fileType, video);
 
   // Set headers for proper download
   res.setHeader('Content-Type', fileDetails.contentType);
@@ -147,11 +161,138 @@ const getFileDetails = (type: string, video: any) => {
         downloadName: video.name,
       };
 
+    case 'audio':
+      return {
+        filename: 'audio.mp3',
+        contentType: 'audio/mpeg',
+        downloadName: `${video.name.replace(/\.[^/.]+$/, '')}_audio.mp3`,
+      };
+
     default:
+      // Check if it's a resize format (e.g., "640x480")
+      if (type.match(/^\d+x\d+$/) && video.resizes[type]) {
+        return {
+          filename: `${type}.${video.extension}`,
+          contentType:
+            CONTENT_TYPES[
+              video.extension.toLowerCase() as keyof typeof CONTENT_TYPES
+            ] || 'application/octet-stream',
+          downloadName: `${video.name.replace(/\.[^/.]+$/, '')}_${type}.${
+            video.extension
+          }`,
+        };
+      }
+
       return {
         filename: type,
         contentType: 'application/octet-stream',
         downloadName: type,
       };
+  }
+};
+
+export const extractAudio = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { videoId } = req.body;
+  const video = db.videos.find((v) => v.videoId === videoId);
+  if (!video) {
+    return next({ status: 404, message: 'Video not found' });
+  }
+
+  const videoDir = path.join('./storage', videoId);
+  const videoPath = path.join(videoDir, `original.${video.extension}`);
+  const audioPath = path.join(videoDir, 'audio.mp3');
+
+  try {
+    await extractAudioFromVideo(videoPath, audioPath);
+
+    video.extractedAudio = true;
+    db.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Audio extracted successfully',
+      audioPath: audioPath,
+    });
+  } catch (error) {
+    console.error(error);
+    const errorMessage = (error as Error).message;
+
+    if (errorMessage.includes('no audio stream')) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Video file contains no audio stream',
+      });
+    }
+
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to extract audio',
+    });
+  }
+};
+
+export const resizeVideo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { videoId, width, height } = req.body;
+
+  if (!videoId || !width || !height) {
+    return next({
+      status: 400,
+      message: 'Missing required fields: videoId, width, height',
+    });
+  }
+
+  const video = db.videos.find((v) => v.videoId === videoId);
+  if (!video) {
+    return next({ status: 404, message: 'Video not found' });
+  }
+
+  const resizeKey = `${width}x${height}`;
+
+  if (video.resizes[resizeKey]) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Video already resized to this dimension',
+      resizeKey,
+    });
+  }
+
+  const videoDir = path.join('./storage', videoId);
+  const inputPath = path.join(videoDir, `original.${video.extension}`);
+  const outputPath = path.join(videoDir, `${resizeKey}.${video.extension}`);
+
+  try {
+    await resizeVideoFile(inputPath, outputPath, width, height);
+
+    (video.resizes as any)[resizeKey] = {
+      width: parseInt(width),
+      height: parseInt(height),
+      filename: `${resizeKey}.${video.extension}`,
+      processing: false,
+    };
+    db.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Video resized successfully',
+      resizeKey,
+      dimensions: { width: parseInt(width), height: parseInt(height) },
+      processing: false,
+    });
+  } catch (error) {
+    console.error(error);
+    const errorMessage = (error as Error).message;
+
+    res.status(500).json({
+      status: 'error',
+      message: `Failed to resize video: ${errorMessage}`,
+    });
   }
 };

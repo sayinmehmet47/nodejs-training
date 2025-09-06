@@ -33,4 +33,10 @@ export default (server: Express) => {
 
   // Get a video asset
   server.get('/get-video-asset', authenticate, Video.getVideoAsset);
+
+  // Extract audio from a video
+  server.patch('/api/video/extract-audio', authenticate, Video.extractAudio);
+
+  // Resize a video
+  server.put('/api/video/resize', authenticate, Video.resizeVideo);
 };
