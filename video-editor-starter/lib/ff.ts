@@ -175,6 +175,8 @@ export const resizeVideoFile = async (
       inputPath,
       '-vf',
       `scale=${width}:${height}`,
+      '-aspect',
+      `${width}:${height}`,
       '-c:a',
       'copy',
       outputPath,
