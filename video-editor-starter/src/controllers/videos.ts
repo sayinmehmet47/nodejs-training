@@ -12,6 +12,7 @@ import {
   extractAudioFromVideo,
   resizeVideoFile,
 } from '../../lib/ff';
+import { videoProcessingQueue } from '../../lib/jobQueue';
 
 export const getVideos = (req: Request, res: Response, next: NextFunction) => {
   const videos = db.videos.filter(
@@ -202,36 +203,24 @@ export const extractAudio = async (
     return next({ status: 404, message: 'Video not found' });
   }
 
-  const videoDir = path.join('./storage', videoId);
-  const videoPath = path.join(videoDir, `original.${video.extension}`);
-  const audioPath = path.join(videoDir, 'audio.mp3');
+  if (video.extractedAudio) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Audio already extracted',
+    });
+  }
+
+  res.status(202).json({
+    status: 'processing',
+    message: 'Audio extraction job queued',
+  });
 
   try {
-    await extractAudioFromVideo(videoPath, audioPath);
-
-    video.extractedAudio = true;
-    db.save();
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Audio extracted successfully',
-      audioPath: audioPath,
+    await videoProcessingQueue.addJob(`${videoId}-audio`, 'extract-audio', {
+      videoId,
     });
   } catch (error) {
     console.error(error);
-    const errorMessage = (error as Error).message;
-
-    if (errorMessage.includes('no audio stream')) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Video file contains no audio stream',
-      });
-    }
-
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to extract audio',
-    });
   }
 };
 
@@ -264,35 +253,31 @@ export const resizeVideo = async (
     });
   }
 
-  const videoDir = path.join('./storage', videoId);
-  const inputPath = path.join(videoDir, `original.${video.extension}`);
-  const outputPath = path.join(videoDir, `${resizeKey}.${video.extension}`);
+  video.resizes[resizeKey] = {
+    width: parseInt(width),
+    height: parseInt(height),
+    filename: `${resizeKey}.${video.extension}`,
+    processing: true,
+  };
+  db.save();
+
+  res.status(202).json({
+    status: 'processing',
+    message: 'Video resize job queued',
+    resizeKey,
+    dimensions: { width: parseInt(width), height: parseInt(height) },
+    processing: true,
+  });
 
   try {
-    await resizeVideoFile(inputPath, outputPath, width, height);
-
-    (video.resizes as any)[resizeKey] = {
+    await videoProcessingQueue.addJob(`${videoId}-${resizeKey}`, 'resize', {
+      videoId,
       width: parseInt(width),
       height: parseInt(height),
-      filename: `${resizeKey}.${video.extension}`,
-      processing: false,
-    };
-    db.save();
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Video resized successfully',
-      resizeKey,
-      dimensions: { width: parseInt(width), height: parseInt(height) },
-      processing: false,
     });
   } catch (error) {
     console.error(error);
-    const errorMessage = (error as Error).message;
-
-    res.status(500).json({
-      status: 'error',
-      message: `Failed to resize video: ${errorMessage}`,
-    });
+    delete video.resizes[resizeKey];
+    db.save();
   }
 };

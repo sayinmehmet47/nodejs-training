@@ -29,6 +29,7 @@ interface Video {
       width: number;
       height: number;
       filename: string;
+      processing: boolean;
     }
   >;
 }
