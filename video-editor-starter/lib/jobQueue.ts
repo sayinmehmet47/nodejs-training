@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { resizeVideoFile, extractAudioFromVideo } from './ff';
 import db from '../src/DB';
+import { restoreUnfinishedJobs, UnfinishedJob } from './jobRestoration';
 
 interface ResizeJobData {
   videoId: string;
@@ -24,9 +25,23 @@ export class JobQueue {
   private jobs: Job[] = [];
   private maxConcurrentJobs: number;
   private currentJobs = 0;
-
-  constructor(maxConcurrentJobs: number = 2) {
+  constructor(
+    maxConcurrentJobs: number = 2,
+    existingJobs: (Job | UnfinishedJob)[] = []
+  ) {
     this.maxConcurrentJobs = maxConcurrentJobs;
+    this.jobs = existingJobs.map(job => ({
+      ...job,
+      resolve: job.resolve || (() => {}),
+      reject: job.reject || (() => {})
+    })) as Job[];
+    this.currentJobs = 0; // No jobs are currently running when starting
+
+    // Process jobs if there are any in the queue
+    if (this.jobs.length > 0) {
+      console.log(`JobQueue initialized with ${this.jobs.length} pending jobs`);
+      this.processNextJob();
+    }
   }
 
   async addJob(
@@ -61,7 +76,6 @@ export class JobQueue {
     } catch (error) {
       job.reject(error);
     } finally {
-      // process the job log
       console.log(`Finished processing job ${job.id}`);
       this.currentJobs--;
       this.processNextJob();
@@ -96,10 +110,37 @@ export class JobQueue {
     const videoPath = path.join(videoDir, `original.${video.extension}`);
     const audioPath = path.join(videoDir, 'audio.mp3');
 
-    await extractAudioFromVideo(videoPath, audioPath);
+    console.log(
+      `Before extraction: video.extractedAudio = ${video.extractedAudio}`
+    );
 
-    video.extractedAudio = true;
-    db.save();
+    try {
+      await extractAudioFromVideo(videoPath, audioPath);
+      video.extractedAudio = true;
+      db.save();
+      console.log(
+        `After extraction and save: video.extractedAudio = ${video.extractedAudio}`
+      );
+    } catch (error) {
+      console.error(
+        `Audio extraction failed for video ${data.videoId}:`,
+        error
+      );
+
+      // If the video has no audio stream, mark as processed to avoid retrying
+      if (
+        error instanceof Error &&
+        error.message.includes('contains no audio stream')
+      ) {
+        console.log(
+          `Video ${data.videoId} has no audio stream, marking as processed`
+        );
+        video.extractedAudio = true;
+        db.save();
+      } else {
+        throw error;
+      }
+    }
   }
 
   getQueueStatus() {
@@ -111,4 +152,5 @@ export class JobQueue {
   }
 }
 
-export const videoProcessingQueue = new JobQueue(2);
+const unfinishedJobs = restoreUnfinishedJobs();
+export const videoProcessingQueue = new JobQueue(1, unfinishedJobs);

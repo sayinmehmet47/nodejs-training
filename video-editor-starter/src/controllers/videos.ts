@@ -7,11 +7,7 @@ import { deleteFileOrDir } from '../../lib/utils';
 import { mkdir } from 'node:fs/promises';
 import db from '../DB';
 import { RequestWithUserId } from '../middleware';
-import {
-  makeThumbnail,
-  extractAudioFromVideo,
-  resizeVideoFile,
-} from '../../lib/ff';
+import { makeThumbnail } from '../../lib/ff';
 import { videoProcessingQueue } from '../../lib/jobQueue';
 
 export const getVideos = (req: Request, res: Response, next: NextFunction) => {
