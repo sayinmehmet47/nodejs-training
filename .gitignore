@@ -3,3 +3,4 @@ stream/text.txt
 stream/dest.txt
 inversify/node_modules
 video-editor-starter/storage
+compressions/largefile_5GB.txt
