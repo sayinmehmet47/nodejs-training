@@ -1,0 +1,14 @@
+{
+  "name": "sharding-demo",
+  "version": "1.0.0",
+  "description": "Learn database sharding with PostgreSQL",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "demo": "node demo.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
