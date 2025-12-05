@@ -1,5 +1,24 @@
-import pg from "pg";
-const { Pool } = pg;
+import { Pool, QueryResult } from "pg";
+
+/**
+ * Configuration for a single database shard
+ */
+export interface ShardConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+/**
+ * Result from a scatter-gather query across all shards
+ */
+export interface ShardQueryResult<T = Record<string, unknown>> {
+  shardIndex: number;
+  rows: T[];
+  rowCount: number | null;
+}
 
 /**
  * ShardManager - Routes queries to the correct database shard
@@ -10,7 +29,10 @@ const { Pool } = pg;
  * - All related data (user + their orders) lives on the same shard
  */
 class ShardManager {
-  constructor(shardConfigs) {
+  private shards: Map<number, Pool>;
+  private numberOfShards: number;
+
+  constructor(shardConfigs: ShardConfig[]) {
     this.shards = new Map();
     this.numberOfShards = shardConfigs.length;
 
@@ -25,7 +47,7 @@ class ShardManager {
           user: config.user,
           password: config.password,
           max: 10, // max connections per shard
-        }),
+        })
       );
       console.log(`Shard ${index} connected at port ${config.port}`);
     });
@@ -35,7 +57,7 @@ class ShardManager {
    * Determine which shard a key belongs to using modulo hashing
    * Simple but effective for evenly distributed numeric IDs
    */
-  getShardIndex(shardKey) {
+  getShardIndex(shardKey: number | string): number {
     // For numeric keys, use modulo directly
     // For string keys, you'd hash first (e.g., using murmur3)
     const index = Math.abs(Number(shardKey)) % this.numberOfShards;
@@ -46,41 +68,54 @@ class ShardManager {
   /**
    * Get the connection pool for a specific shard
    */
-  getShard(shardKey) {
+  getShard(shardKey: number | string): Pool {
     const shardIndex = this.getShardIndex(shardKey);
-    return this.shards.get(shardIndex);
+    const pool = this.shards.get(shardIndex);
+    if (!pool) {
+      throw new Error(`Shard ${shardIndex} not found`);
+    }
+    return pool;
   }
 
   /**
    * Execute a query on the appropriate shard
    */
-  async query(shardKey, sql, params = []) {
+  async query<T = Record<string, unknown>>(
+    shardKey: number | string,
+    sql: string,
+    params: unknown[] = []
+  ): Promise<QueryResult<T>> {
     const pool = this.getShard(shardKey);
-    return pool.query(sql, params);
+    return pool.query<T>(sql, params);
   }
 
   /**
    * Execute a query on ALL shards (scatter-gather pattern)
    * Use sparingly - this defeats the purpose of sharding!
    */
-  async queryAllShards(sql, params = []) {
-    const promises = [];
+  async queryAllShards<T = Record<string, unknown>>(
+    sql: string,
+    params: unknown[] = []
+  ): Promise<ShardQueryResult<T>[]> {
+    const promises: Promise<ShardQueryResult<T>>[] = [];
+
     for (const [index, pool] of this.shards) {
       promises.push(
-        pool.query(sql, params).then((result) => ({
+        pool.query<T>(sql, params).then((result) => ({
           shardIndex: index,
           rows: result.rows,
           rowCount: result.rowCount,
-        })),
+        }))
       );
     }
+
     return Promise.all(promises);
   }
 
   /**
    * Close all connections
    */
-  async close() {
+  async close(): Promise<void> {
     for (const [index, pool] of this.shards) {
       await pool.end();
       console.log(`Shard ${index} disconnected`);
@@ -89,7 +124,7 @@ class ShardManager {
 }
 
 // Configuration for our 3 local shards
-export const shardConfigs = [
+export const shardConfigs: ShardConfig[] = [
   {
     host: "localhost",
     port: 5433,
