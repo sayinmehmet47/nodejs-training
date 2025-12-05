@@ -25,7 +25,7 @@ const server = net.createServer((socket) => {
     } else if (recipient.startsWith("@")) {
       // Private message
       const targetClient = clients.find((client) =>
-        client.address.includes(recipient.substring(1))
+        client.address.includes(recipient.substring(1)),
       );
 
       if (targetClient) {
@@ -47,7 +47,7 @@ const server = net.createServer((socket) => {
 
   // Send welcome message
   socket.write(
-    "Welcome to the TCP chat! Use @all to broadcast or @username to send a private message.\n"
+    "Welcome to the TCP chat! Use @all to broadcast or @username to send a private message.\n",
   );
 });
 

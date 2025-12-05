@@ -1,0 +1,10 @@
+[
+  {
+    "adapter": "JavaScript",
+    "label": "Debug Current File",
+    "type": "node",
+    "request": "launch",
+    "program": "$ZED_FILE",
+    "skipFiles": ["<node_internals>/**"]
+  }
+]
