@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "demo": "npx tsx src/demo.ts",
-    "demo:build": "npm run build && node dist/demo.js"
+    "demo:ha": "npx tsx src/ha-demo.ts",
+    "ha:up": "docker-compose -f ha-simple/docker-compose.yml up -d",
+    "ha:down": "docker-compose -f ha-simple/docker-compose.yml down",
+    "ha:logs": "docker-compose -f ha-simple/docker-compose.yml logs -f"
   },
   "dependencies": {
     "pg": "^8.11.3"
