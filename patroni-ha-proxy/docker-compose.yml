@@ -1,0 +1,73 @@
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: etcd
+    environment:
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd:2380
+      ETCD_INITIAL_CLUSTER: etcd=http://etcd:2380
+      ETCD_NAME: etcd
+    networks:
+      - ha-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  patroni1:
+    build: ./patroni
+    container_name: patroni1
+    environment:
+      PATRONI_NAME: patroni1
+    ports:
+      - "5440:5432"
+      - "8008:8008"
+    volumes:
+      - patroni1_data:/var/lib/postgresql/data
+    networks:
+      - ha-network
+    depends_on:
+      etcd:
+        condition: service_healthy
+
+  patroni2:
+    build: ./patroni
+    container_name: patroni2
+    environment:
+      PATRONI_NAME: patroni2
+    ports:
+      - "5441:5432"
+      - "8009:8008"
+    volumes:
+      - patroni2_data:/var/lib/postgresql/data
+    networks:
+      - ha-network
+    depends_on:
+      etcd:
+        condition: service_healthy
+
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: haproxy
+    ports:
+      - "5432:5432"
+      - "5433:5433"
+      - "7000:7000"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - ha-network
+    depends_on:
+      - patroni1
+      - patroni2
+
+volumes:
+  patroni1_data:
+  patroni2_data:
+
+networks:
+  ha-network:
+    driver: bridge
