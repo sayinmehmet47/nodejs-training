@@ -3,6 +3,7 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^5.0.3",
     "@types/node": "^22.14.1",
     "@types/ws": "^8.18.1",
@@ -17,6 +18,7 @@
   "type": "module",
   "dependencies": {
     "@types/cli-progress": "^3.11.6",
+    "amqplib": "^2.0.1",
     "cli-progress": "^3.12.0",
     "ws": "^8.21.1"
   }
