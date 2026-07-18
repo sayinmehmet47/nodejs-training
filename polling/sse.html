@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SSE Demo</title>
+  <style>
+    body { font-family: monospace; max-width: 600px; margin: 40px auto; }
+    #log { background: #111; color: #0f0; padding: 16px; border-radius: 6px; min-height: 200px; white-space: pre-wrap; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
+    input { padding: 8px; font-size: 14px; width: 280px; }
+  </style>
+</head>
+<body>
+  <h1>SSE Demo</h1>
+  <p>Click "Submit" to start a fake job. Progress streams via Server-Sent Events.</p>
+
+  <button id="submitBtn">Submit Job</button>
+  <span id="jobIdLabel" style="color: #666; font-size: 13px;"></span>
+  <br /><br />
+
+  <div id="log">Ready. Click "Submit Job" to begin.</div>
+
+  <script>
+    const log = document.getElementById("log");
+    const submitBtn = document.getElementById("submitBtn");
+    const label = document.getElementById("jobIdLabel");
+
+    let eventSource = null;
+
+    function append(msg) {
+      log.textContent += "\n" + msg;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    submitBtn.onclick = async () => {
+      const res = await fetch("/submit", { method: "POST" });
+      const { jobId } = await res.json();
+      append(`Job created: ${jobId}`);
+      label.textContent = `Watching: ${jobId}`;
+
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource(`/events?jobId=${jobId}`);
+
+      eventSource.addEventListener("connected", (e) => {
+        append("[connected] " + e.data);
+      });
+
+      eventSource.addEventListener("message", (e) => {
+        const { progress, completed } = JSON.parse(e.data);
+        append(`Progress: ${progress}% ${completed ? "(done)" : ""}`);
+      });
+
+      eventSource.addEventListener("done", (e) => {
+        append("[done] " + e.data);
+        eventSource.close();
+        eventSource = null;
+      });
+
+      eventSource.addEventListener("error", (e) => {
+        append("[error] " + (e.data || "Connection error"));
+      });
+
+      eventSource.onerror = () => {
+        if (eventSource && eventSource.readyState === 2) {
+          append("[closed] Connection closed");
+        }
+      };
+    };
+  </script>
+</body>
+</html>
