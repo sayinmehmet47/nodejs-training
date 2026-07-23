@@ -13,6 +13,7 @@ const server = net.createServer((socket: Socket) => {
   });
 });
 
-server.listen(3099, () => {
-  console.log('TCP server listening on port 4000');
+const PORT = 3099;
+server.listen(PORT, () => {
+  console.log(`TCP server listening on port ${PORT}`);
 });
